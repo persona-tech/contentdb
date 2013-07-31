@@ -1,6 +1,7 @@
 package com.discovery.contentdb.matrix;
 
 import com.google.common.collect.Maps;
+import org.apache.lucene.index.IndexReader;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.mahout.math.AbstractMatrix;
 import org.apache.mahout.math.Matrix;
@@ -10,10 +11,13 @@ import org.apache.mahout.math.Vector;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.TermVectorParams;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -127,19 +131,32 @@ public class SolrFieldMatrix extends AbstractMatrix {
       return results.get(0);
     }
   }
+  private List<TermsResponse.Term> viewTerms(String docId) throws SolrServerException {
+    SolrQuery query = new SolrQuery();
+    query.setFacet(false).
+      setHighlight(false).
+      setRows(1).
+      setFields(idField, field).
+      setParam(TermVectorParams.TF_IDF).
+      setQuery("{!term f=" + idField + "}" + docId);
+    return server.query(query).getTermsResponse().getTerms(field);
+  }
+
+
+
 
   public Vector viewRow(int row) {
     //TODO: this should return the document, where the value of the idField is the String representation of the
     //parameter. If this is a text or StringField, The returning vector should have non-zero column ids of
     // values from  columnLabelBindings  for the words/tokens the document has.
-    SolrDocument document = null;
-    try {
-      document = viewRow(Integer.toString(row));
-    } catch (SolrServerException e) {
-      return null;
-    }
     Vector v = new SequentialAccessSparseVector(columnSize());
     if (type == TYPE.NUMERICAL) {
+      SolrDocument document = null;
+      try {
+        document = viewRow(Integer.toString(row));
+      } catch (SolrServerException e) {
+        return null;
+      }
       if (document != null) {
         v.setQuick(0, Double.parseDouble((String) document.getFieldValue(field)));
       }
@@ -147,15 +164,31 @@ public class SolrFieldMatrix extends AbstractMatrix {
     } else if (type == TYPE.BOOLEAN) {
       return null;
     } else if (type == TYPE.MULTINOMIAL) {
+      SolrDocument document = null;
+      try {
+        document = viewRow(Integer.toString(row));
+      } catch (SolrServerException e) {
+        return null;
+      }
       if (document != null) {
         v.setQuick(columnLabelBindings.get((String) document.getFieldValue(field)), 1);
       }
       return v;
     } else if (type == TYPE.TEXT) {
-      if(document != null) {
-        //?
+
+      List<TermsResponse.Term> terms = null;
+      try {
+        terms = viewTerms(Integer.toString(row));
+      } catch (SolrServerException e) {
+        return null;
       }
-      return null;
+      for (TermsResponse.Term term : terms) {
+        String word = term.getTerm();
+
+        int tf = (int) term.getFrequency();
+        v.setQuick(columnLabelBindings.get(word), tf);
+      }
+      return v;
     } else {
       return null;
     }
