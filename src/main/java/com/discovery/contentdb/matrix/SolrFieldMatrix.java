@@ -11,12 +11,14 @@ import org.apache.mahout.math.Vector;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.TermVectorParams;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -33,8 +35,11 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private String[] columnLabels;
   private Map<String, Integer> columnLabelBindings;
 
-  public SolrFieldMatrix(String url) {
+  public SolrFieldMatrix(String url, String idField, String field, TYPE type) {
     super(0, 0);
+    this.idField = idField;
+    this.field = field;
+    this.type = type;
     this.server = new HttpSolrServer(url);
     server.setMaxRetries(1);
     server.setConnectionTimeout(2000);
@@ -73,7 +78,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
       if (type == TYPE.BOOLEAN) {
         keyword = "true";
       }
-      query.setQuery("{!term f=" + field + "}" + keyword);
+      query.setQuery(field+ ":" + keyword);
     } else {
       query.setQuery(keyword);
       query.setParam(CommonParams.DF, this.field);
@@ -108,22 +113,21 @@ public class SolrFieldMatrix extends AbstractMatrix {
       if (type == TYPE.BOOLEAN) {
         keyword = "true";
       }
-      query.setQuery("{!term f=" + field + "}" + keyword);
+      query.setQuery(field + ":" + keyword);
     } else {
       query.setQuery(keyword);
-      query.setParam(CommonParams.DF, this.field);
     }
     query.setFields(idField, field);
     return server.query(query).getResults();
   }
 
-  private SolrDocument viewRow(String docId) throws SolrServerException {
+  private SolrDocument viewDocument(int docId) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setFacet(false).
       setHighlight(false).
       setRows(1).
       setFields(idField, field).
-      setQuery("{!term f=" + idField + "}" + docId);
+      setQuery(idField + ":" + docId);
     SolrDocumentList results = server.query(query).getResults();
     if (results.size() == 0) {
       return null;
@@ -131,15 +135,23 @@ public class SolrFieldMatrix extends AbstractMatrix {
       return results.get(0);
     }
   }
-  private List<TermsResponse.Term> viewTerms(String docId) throws SolrServerException {
+  private List<TermsResponse.Term> viewTerms(int docId) throws SolrServerException {
     SolrQuery query = new SolrQuery();
-    query.setFacet(false).
-      setHighlight(false).
-      setRows(1).
+    query.setRows(1).
       setFields(idField, field).
-      setParam(TermVectorParams.TF_IDF).
-      setQuery("{!term f=" + idField + "}" + docId);
-    return server.query(query).getTermsResponse().getTerms(field);
+      setParam(CommonParams.DF, this.field).
+      setTerms(true).
+      addTermsField(field).
+      setParam(TermVectorParams.TF_IDF, true).
+      setParam(TermVectorParams.ALL, true).
+      setParam(TermVectorParams.FIELDS, field).
+      setIncludeScore(false).
+      setQuery(idField + ":" + docId);
+    System.out.println(query);
+    QueryResponse queryResponse = server.query(query);
+    System.out.println(queryResponse);
+    TermsResponse termsResponse = queryResponse.getTermsResponse();
+    return termsResponse.getTerms(field);
   }
 
 
@@ -153,7 +165,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
     if (type == TYPE.NUMERICAL) {
       SolrDocument document = null;
       try {
-        document = viewRow(Integer.toString(row));
+        document = viewDocument(row);
       } catch (SolrServerException e) {
         return null;
       }
@@ -166,7 +178,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
     } else if (type == TYPE.MULTINOMIAL) {
       SolrDocument document = null;
       try {
-        document = viewRow(Integer.toString(row));
+        document = viewDocument(row);
       } catch (SolrServerException e) {
         return null;
       }
@@ -178,7 +190,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
 
       List<TermsResponse.Term> terms = null;
       try {
-        terms = viewTerms(Integer.toString(row));
+        terms = viewTerms(row);
       } catch (SolrServerException e) {
         return null;
       }
@@ -243,5 +255,12 @@ public class SolrFieldMatrix extends AbstractMatrix {
   public Matrix viewPart(int[] offset, int[] size) {
     //TODO: this SHOULD be supported, actually
     throw new UnsupportedOperationException();
+  }
+
+  public static void main(String[] args) throws Exception {
+    //example usage
+    SolrFieldMatrix matrix = new SolrFieldMatrix("http://localhost:8983/solr", "id", "title", TYPE.TEXT);
+    matrix.getCandidates("myKeyword", 5);
+    //matrix.viewRow(2);
   }
 }
