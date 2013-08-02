@@ -3,7 +3,6 @@ package com.discovery.contentdb.matrix;
 import com.discovery.contentdb.matrix.solrj.tv.TermVectorResponse;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.lucene.index.IndexReader;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.mahout.math.AbstractMatrix;
 import org.apache.mahout.math.Matrix;
@@ -17,7 +16,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -41,7 +39,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private Map<String, Integer> columnLabelBindings;
 
   public SolrFieldMatrix(String url, String idField, String field, TYPE type) throws IOException,
-    SolrServerException{
+    SolrServerException {
     super(Integer.MAX_VALUE, 0);
     this.idField = idField;
     this.field = field;
@@ -91,7 +89,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
       if (type == TYPE.BOOLEAN) {
         keyword = "true";
       }
-      query.setQuery(field+ ":" + keyword);
+      query.setQuery(field + ":" + keyword);
     } else {
       query.setQuery(keyword);
       query.setParam(CommonParams.DF, this.field);
@@ -129,26 +127,27 @@ public class SolrFieldMatrix extends AbstractMatrix {
       query.setQuery(field + ":" + keyword);
     } else {
       query.setQuery(keyword);
-}
-query.setFields(idField, field);
-return server.query(query).getResults();
-}
-
-private SolrDocument viewDocument(int docId) throws SolrServerException {
-  SolrQuery query = new SolrQuery();
-query.setFacet(false).
-  setHighlight(false).
-  setRows(1).
-  setFields(idField, field).
-  setQuery(idField + ":" + docId);
-SolrDocumentList results = server.query(query).getResults();
-if (results.size() == 0) {
-  return null;
-} else {
-  return results.get(0);
-}
+    }
+    query.setFields(idField, field);
+    return server.query(query).getResults();
   }
-private List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws SolrServerException {
+
+  private SolrDocument viewDocument(int docId) throws SolrServerException {
+    SolrQuery query = new SolrQuery();
+    query.setFacet(false).
+      setHighlight(false).
+      setRows(1).
+      setFields(idField, field).
+      setQuery(idField + ":" + docId);
+    SolrDocumentList results = server.query(query).getResults();
+    if (results.size() == 0) {
+      return null;
+    } else {
+      return results.get(0);
+    }
+  }
+
+  private List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setRows(1).
       setFields(idField, field).
@@ -162,7 +161,7 @@ private List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws Solr
     System.out.println(query);
     QueryResponse queryResponse = server.query(query);
     System.out.println(queryResponse);
-  TermVectorResponse termVectorResponse = new TermVectorResponse(query, queryResponse);
+    TermVectorResponse termVectorResponse = new TermVectorResponse(query, queryResponse);
     return termVectorResponse.getTermVectorInfoList();
   }
 
