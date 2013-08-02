@@ -1,5 +1,7 @@
 package com.discovery.contentdb.matrix;
 
+import com.discovery.contentdb.matrix.solrj.tv.TermVectorResponse;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.lucene.index.IndexReader;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
@@ -9,8 +11,11 @@ import org.apache.mahout.math.SequentialAccessSparseVector;
 import org.apache.mahout.math.SparseMatrix;
 import org.apache.mahout.math.Vector;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.TermsResponse;
 import org.apache.solr.common.SolrDocument;
@@ -18,7 +23,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.TermVectorParams;
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -35,8 +40,9 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private String[] columnLabels;
   private Map<String, Integer> columnLabelBindings;
 
-  public SolrFieldMatrix(String url, String idField, String field, TYPE type) {
-    super(0, 0);
+  public SolrFieldMatrix(String url, String idField, String field, TYPE type) throws IOException,
+    SolrServerException{
+    super(Integer.MAX_VALUE, 0);
     this.idField = idField;
     this.field = field;
     this.type = type;
@@ -47,26 +53,33 @@ public class SolrFieldMatrix extends AbstractMatrix {
     initialize();
   }
 
-  private void initialize() {
+  private void initialize() throws IOException, SolrServerException {
     int columns = 0;
     columnLabelBindings = Maps.newHashMap();
     if (type.equals(TYPE.BOOLEAN) || type.equals(TYPE.NUMERICAL)) {
       columnLabelBindings.put(field, 0);
       columns = 1;
-    } else if (type.equals(TYPE.MULTINOMIAL)) {
-      /*TODO: Fill the columnLabelBindings with <uniqueValue, autoIncrementArrayIndex> pairs. This way,
-      we can return a SparseVector when a row is asked, by fetching column ids from columnLabelBindings. And when a
-      get request is done (with rowIndex and columnIndex), we can first fetch the row vector and then return the
-      value for the column index.
-      */
-    } else if (type.equals(TYPE.TEXT)) {
-      /*TODO: Get the TermInfo, and fill the columnLabelBindings with <token, autoIncrementArrayIndex> pairs. This
-      way, we can return a SparseVector when a row is asked, by fetching ids from columnLabelBindings. And when a get
-      request is done (with rowIndex and columnIndex), we can first fetch the row vector and then return the value
-      for the column index.
-      */
+    } else if (type.equals(TYPE.TEXT) || type.equals(TYPE.MULTINOMIAL)) {
+      LukeRequest lukeRequest = new LukeRequest();
+      lukeRequest.setNumTerms(10000);
+      lukeRequest.setFields(Lists.newArrayList(field));
+      lukeRequest.setMethod(SolrRequest.METHOD.GET);
+
+      final LukeResponse response = lukeRequest.process(server);
+      int i = 0;
+      for (Map.Entry<String, Integer> histogramEntry : response.getFieldInfo().get(field).getTopTerms()) {
+        String word = histogramEntry.getKey();
+        columnLabelBindings.put(word, i++);
+
+      }
+      columns = i;
     }
     this.columns = columns;
+  }
+
+  @Override
+  public int columnSize() {
+    return this.columns;
   }
 
   public FastIDSet getCandidates(String keyword, int maxLength) throws SolrServerException {
@@ -116,51 +129,44 @@ public class SolrFieldMatrix extends AbstractMatrix {
       query.setQuery(field + ":" + keyword);
     } else {
       query.setQuery(keyword);
-    }
-    query.setFields(idField, field);
-    return server.query(query).getResults();
-  }
+}
+query.setFields(idField, field);
+return server.query(query).getResults();
+}
 
-  private SolrDocument viewDocument(int docId) throws SolrServerException {
-    SolrQuery query = new SolrQuery();
-    query.setFacet(false).
-      setHighlight(false).
-      setRows(1).
-      setFields(idField, field).
-      setQuery(idField + ":" + docId);
-    SolrDocumentList results = server.query(query).getResults();
-    if (results.size() == 0) {
-      return null;
-    } else {
-      return results.get(0);
-    }
+private SolrDocument viewDocument(int docId) throws SolrServerException {
+  SolrQuery query = new SolrQuery();
+query.setFacet(false).
+  setHighlight(false).
+  setRows(1).
+  setFields(idField, field).
+  setQuery(idField + ":" + docId);
+SolrDocumentList results = server.query(query).getResults();
+if (results.size() == 0) {
+  return null;
+} else {
+  return results.get(0);
+}
   }
-  private List<TermsResponse.Term> viewTerms(int docId) throws SolrServerException {
+private List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setRows(1).
       setFields(idField, field).
       setParam(CommonParams.DF, this.field).
-      setTerms(true).
-      addTermsField(field).
       setParam(TermVectorParams.TF_IDF, true).
-      setParam(TermVectorParams.ALL, true).
+      setParam(TermVectorParams.DF, true).
+      setParam(TermVectorParams.TF, true).
       setParam(TermVectorParams.FIELDS, field).
       setIncludeScore(false).
       setQuery(idField + ":" + docId);
     System.out.println(query);
     QueryResponse queryResponse = server.query(query);
     System.out.println(queryResponse);
-    TermsResponse termsResponse = queryResponse.getTermsResponse();
-    return termsResponse.getTerms(field);
+  TermVectorResponse termVectorResponse = new TermVectorResponse(query, queryResponse);
+    return termVectorResponse.getTermVectorInfoList();
   }
 
-
-
-
   public Vector viewRow(int row) {
-    //TODO: this should return the document, where the value of the idField is the String representation of the
-    //parameter. If this is a text or StringField, The returning vector should have non-zero column ids of
-    // values from  columnLabelBindings  for the words/tokens the document has.
     Vector v = new SequentialAccessSparseVector(columnSize());
     if (type == TYPE.NUMERICAL) {
       SolrDocument document = null;
@@ -188,17 +194,15 @@ public class SolrFieldMatrix extends AbstractMatrix {
       return v;
     } else if (type == TYPE.TEXT) {
 
-      List<TermsResponse.Term> terms = null;
+      List<TermVectorResponse.TermVectorInfo> terms = null;
       try {
         terms = viewTerms(row);
       } catch (SolrServerException e) {
         return null;
       }
-      for (TermsResponse.Term term : terms) {
-        String word = term.getTerm();
-
-        int tf = (int) term.getFrequency();
-        v.setQuick(columnLabelBindings.get(word), tf);
+      for (TermVectorResponse.TermVectorInfo term : terms) {
+        String word = term.getWord();
+        v.setQuick(columnLabelBindings.get(word), term.getTfIdf());
       }
       return v;
     } else {
@@ -259,8 +263,9 @@ public class SolrFieldMatrix extends AbstractMatrix {
 
   public static void main(String[] args) throws Exception {
     //example usage
-    SolrFieldMatrix matrix = new SolrFieldMatrix("http://localhost:8983/solr", "id", "title", TYPE.TEXT);
-    matrix.getCandidates("myKeyword", 5);
+    SolrFieldMatrix matrix = new SolrFieldMatrix("http://localhost:8983/solr", "id", "includes", TYPE.TEXT);
+    //matrix.getCandidates("myKeyword", 5);
+    matrix.viewTerms(4);
     //matrix.viewRow(2);
   }
 }
