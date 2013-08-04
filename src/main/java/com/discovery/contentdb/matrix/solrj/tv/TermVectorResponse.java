@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * User: gcapan Date: 8/2/13 Time: 3:48 AM
+ * @author gcapan
  */
 public class TermVectorResponse {
   public List<TermVectorInfo> getTermVectorInfoList() {
@@ -20,19 +20,17 @@ public class TermVectorResponse {
 
   List<TermVectorInfo> termVectorInfoList = Lists.newArrayList();
 
-  //assumes one document, one tv.fl
-  public TermVectorResponse(SolrQuery query, QueryResponse solrResponse) {
+  //assumes one tv.fl, creates a list of term entries, to each of which is attached the tf, df,
+  // and tf_idf values if available
+  public TermVectorResponse(SolrQuery query, QueryResponse solrResponse, String id) {
     NamedList namedList = solrResponse.getResponse();
     boolean tf = Boolean.parseBoolean(query.get(TermVectorParams.TF));
     boolean df = Boolean.parseBoolean(query.get(TermVectorParams.DF));
     boolean tf_idf = Boolean.parseBoolean(query.get(TermVectorParams.TF_IDF));
 
-    NamedList fieldTermsList = (NamedList) ((NamedList<NamedList>) namedList.get
-      ("termVectors"))
-      .iterator()
-      .next()
-      .getValue()
-      .get(query.get(TermVectorParams.FIELDS));
+    NamedList termVectorsList = (NamedList) namedList.get("termVectors");
+    NamedList listForDoc = (NamedList) termVectorsList.get(id);
+    NamedList fieldTermsList = (NamedList) listForDoc.get(query.get(TermVectorParams.FIELDS));
 
     Iterator<Map.Entry<String, Object>> tvInfoIterator = fieldTermsList.iterator();
     while (tvInfoIterator.hasNext()) {
@@ -41,13 +39,13 @@ public class TermVectorResponse {
       NamedList tv = (NamedList) tvInfo.getValue();
       TermVectorInfo termVectorInfo = new TermVectorInfo(word);
       if (tf) {
-        termVectorInfo.setTf(Integer.parseInt((String) tv.get("tf")));
+        termVectorInfo.setTf(Integer.parseInt(tv.get("tf").toString()));
       }
       if (df) {
-        termVectorInfo.setDf(Integer.parseInt((String) tv.get("df")));
+        termVectorInfo.setDf(Integer.parseInt(tv.get("df").toString()));
       }
       if (tf_idf) {
-        termVectorInfo.setTfIdf(Double.parseDouble((String) tv.get("tf-idf")));
+        termVectorInfo.setTfIdf(Double.parseDouble(tv.get("tf-idf").toString()));
       }
       termVectorInfoList.add(termVectorInfo);
     }
@@ -89,6 +87,15 @@ public class TermVectorResponse {
 
     public void setTfIdf(double tfIdf) {
       this.tfIdf = tfIdf;
+    }
+
+    @Override
+    public String toString() {
+      return word+":{" +
+        "tf=" + tf +
+        ", df=" + df +
+        ", tfIdf=" + tfIdf +
+        '}';
     }
   }
 }

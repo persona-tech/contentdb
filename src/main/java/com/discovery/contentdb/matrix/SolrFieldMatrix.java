@@ -59,7 +59,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
       columns = 1;
     } else if (type.equals(TYPE.TEXT) || type.equals(TYPE.MULTINOMIAL)) {
       LukeRequest lukeRequest = new LukeRequest();
-      lukeRequest.setNumTerms(10000);
+      lukeRequest.setNumTerms(1000);
       lukeRequest.setFields(Lists.newArrayList(field));
       lukeRequest.setMethod(SolrRequest.METHOD.GET);
 
@@ -73,6 +73,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
       columns = i;
     }
     this.columns = columns;
+    System.out.println(columnLabelBindings.keySet());
   }
 
   @Override
@@ -157,11 +158,10 @@ public class SolrFieldMatrix extends AbstractMatrix {
       setParam(TermVectorParams.TF, true).
       setParam(TermVectorParams.FIELDS, field).
       setIncludeScore(false).
+      setRequestHandler("/tvrh").
       setQuery(idField + ":" + docId);
-    System.out.println(query);
     QueryResponse queryResponse = server.query(query);
-    System.out.println(queryResponse);
-    TermVectorResponse termVectorResponse = new TermVectorResponse(query, queryResponse);
+    TermVectorResponse termVectorResponse = new TermVectorResponse(query, queryResponse, Integer.toString(docId));
     return termVectorResponse.getTermVectorInfoList();
   }
 
@@ -188,7 +188,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
         return null;
       }
       if (document != null) {
-        v.setQuick(columnLabelBindings.get((String) document.getFieldValue(field)), 1);
+        v.setQuick(columnLabelBindings.get(document.getFieldValue(field).toString()), 1);
       }
       return v;
     } else if (type == TYPE.TEXT) {
@@ -262,9 +262,9 @@ public class SolrFieldMatrix extends AbstractMatrix {
 
   public static void main(String[] args) throws Exception {
     //example usage
-    SolrFieldMatrix matrix = new SolrFieldMatrix("http://localhost:8983/solr", "id", "includes", TYPE.TEXT);
+    SolrFieldMatrix matrix = new SolrFieldMatrix("http://localhost:8983/solr", "id", "title", TYPE.TEXT);
     //matrix.getCandidates("myKeyword", 5);
-    matrix.viewTerms(4);
+    matrix.viewTerms(5);
     //matrix.viewRow(2);
   }
 }
