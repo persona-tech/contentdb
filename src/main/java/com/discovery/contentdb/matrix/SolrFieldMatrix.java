@@ -35,7 +35,6 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private TYPE type;
   private HttpSolrServer server;
   private int rows;
-  private String[] columnLabels;
   private Map<String, Integer> columnLabelBindings;
 
   public SolrFieldMatrix(String url, String idField, String field, TYPE type) throws IOException,
@@ -101,6 +100,17 @@ public class SolrFieldMatrix extends AbstractMatrix {
   public FastIDSet getCandidates(SolrQuery query, int maxLength) throws SolrServerException {
     query.setRows(maxLength).
       setStart(0);
+    return getCandidates(query);
+  }
+
+  public FastIDSet mostSimilars(int docId, int maxLength) throws SolrServerException {
+    SolrQuery query = new SolrQuery();
+    query.setRequestHandler("/mlt").
+       setQuery(idField+":"+docId).
+       setParam("mlt.fl",field).
+       setStart(0).
+       setRows(maxLength);
+
     return getCandidates(query);
   }
 
