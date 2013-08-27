@@ -270,9 +270,9 @@ public class SolrFieldMatrix extends AbstractMatrix {
 
   public static void main(String[] args) throws Exception {
     //example usage
-    //SolrFieldMatrix matrix = new SolrFieldMatrix("http://localhost:8983/solr", "id", "title", TYPE.TEXT);
+    SolrFieldMatrix matrix = new SolrFieldMatrix(new HttpSolrServer("http://localhost:8983/solr"), "id", "title", TYPE.TEXT);
     //matrix.getCandidates("myKeyword", 5);
-    //matrix.viewTerms(5);
+    matrix.viewTerms(5);
     //matrix.viewRow(2);
   }
 }
