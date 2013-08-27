@@ -11,6 +11,7 @@ import org.apache.mahout.math.SparseMatrix;
 import org.apache.mahout.math.Vector;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.LukeRequest;
@@ -33,20 +34,17 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private String idField;
   private String field;
   private TYPE type;
-  private HttpSolrServer server;
+  private SolrServer server;
   private int rows;
   private Map<String, Integer> columnLabelBindings;
 
-  public SolrFieldMatrix(String url, String idField, String field, TYPE type) throws IOException,
+  public SolrFieldMatrix(SolrServer server, String idField, String field, TYPE type) throws IOException,
     SolrServerException {
     super(Integer.MAX_VALUE, 0);
     this.idField = idField;
     this.field = field;
     this.type = type;
-    this.server = new HttpSolrServer(url);
-    server.setMaxRetries(1);
-    server.setConnectionTimeout(2000);
-    server.setAllowCompression(true);
+    this.server = server;
     initialize();
   }
 
@@ -272,9 +270,9 @@ public class SolrFieldMatrix extends AbstractMatrix {
 
   public static void main(String[] args) throws Exception {
     //example usage
-    SolrFieldMatrix matrix = new SolrFieldMatrix("http://localhost:8983/solr", "id", "title", TYPE.TEXT);
+    //SolrFieldMatrix matrix = new SolrFieldMatrix("http://localhost:8983/solr", "id", "title", TYPE.TEXT);
     //matrix.getCandidates("myKeyword", 5);
-    matrix.viewTerms(5);
+    //matrix.viewTerms(5);
     //matrix.viewRow(2);
   }
 }
