@@ -1,6 +1,7 @@
 package com.discovery.contentdb.matrix;
 
 import com.discovery.contentdb.matrix.solrj.tv.TermVectorResponse;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
@@ -33,6 +34,7 @@ import java.util.Map;
 public class SolrFieldMatrix extends AbstractMatrix {
   private String idField;
   private String field;
+  private String spatialField = null;
   private TYPE type;
   private SolrServer server;
   private int rows;
@@ -45,6 +47,16 @@ public class SolrFieldMatrix extends AbstractMatrix {
     this.field = field;
     this.type = type;
     this.server = server;
+    initialize();
+  }
+  public SolrFieldMatrix(SolrServer server, String idField, String field, String spatialField, TYPE type) throws IOException,
+    SolrServerException {
+    super(Integer.MAX_VALUE, 0);
+    this.idField = idField;
+    this.field = field;
+    this.type = type;
+    this.server = server;
+    this.spatialField = spatialField;
     initialize();
   }
 
@@ -95,20 +107,24 @@ public class SolrFieldMatrix extends AbstractMatrix {
     return getCandidates(query, maxLength);
   }
 
-  public FastIDSet getCandidates(SolrQuery query, int maxLength) throws SolrServerException {
-    query.setRows(maxLength).
-      setStart(0);
+  public void setSpatialField(String spatialField) {
+    this.spatialField = spatialField;
+  }
+
+  public FastIDSet getCandidates(String keyword, double longitude, double latitude, int rangeInKm) throws SolrServerException{
+    Preconditions.checkNotNull(spatialField, "You should determine the spatial field in your Solr index");
+    SolrQuery query = new SolrQuery();
+    query.setQuery(field+":"+keyword);
+    query.setParam("fq", "{!bbox}");
+    query.setParam("sfield", spatialField);
+    query.setParam("pt", longitude+","+latitude);
+    query.setFields("d", Integer.toString(rangeInKm));
     return getCandidates(query);
   }
 
-  public FastIDSet mostSimilars(int docId, int maxLength) throws SolrServerException {
-    SolrQuery query = new SolrQuery();
-    query.setRequestHandler("/mlt").
-       setQuery(idField+":"+docId).
-       setParam("mlt.fl",field).
-       setStart(0).
-       setRows(maxLength);
-
+  public FastIDSet getCandidates(SolrQuery query, int maxLength) throws SolrServerException {
+    query.setRows(maxLength).
+      setStart(0);
     return getCandidates(query);
   }
 
@@ -122,6 +138,18 @@ public class SolrFieldMatrix extends AbstractMatrix {
     }
     return idSet;
   }
+
+  public FastIDSet mostSimilars(int docId, int maxLength) throws SolrServerException {
+    SolrQuery query = new SolrQuery();
+    query.setRequestHandler("/mlt").
+       setQuery(idField+":"+docId).
+       setParam("mlt.fl",field).
+       setStart(0).
+       setRows(maxLength);
+
+    return getCandidates(query);
+  }
+
 
   private SolrDocumentList getDocuments(String keyword, int maxLength) throws SolrServerException {
     SolrQuery query = new SolrQuery();
