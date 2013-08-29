@@ -35,21 +35,28 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private String idField;
   private String field;
   private String spatialField = null;
+  private boolean multivalued;
   private TYPE type;
   private SolrServer server;
   private int rows;
   private Map<String, Integer> columnLabelBindings;
 
-  public SolrFieldMatrix(SolrServer server, String idField, String field, TYPE type) throws IOException,
-    SolrServerException {
+  public SolrFieldMatrix(SolrServer server, String idField, String field, TYPE type,
+                         boolean multivalued) throws IOException, SolrServerException {
     super(Integer.MAX_VALUE, 0);
+    this.multivalued = multivalued;
+    if(this.multivalued){
+      Preconditions.checkArgument(type.equals(TYPE.MULTINOMIAL), "Multivalued is not supported unless this is a " +
+         "multinomial field");
+    }
     this.idField = idField;
     this.field = field;
     this.type = type;
     this.server = server;
     initialize();
   }
-  public SolrFieldMatrix(SolrServer server, String idField, String field, String spatialField, TYPE type) throws IOException,
+  public SolrFieldMatrix(SolrServer server, String idField, String field, boolean multivalued, String spatialField,
+                         TYPE type) throws IOException,
     SolrServerException {
     super(Integer.MAX_VALUE, 0);
     this.idField = idField;
@@ -72,6 +79,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
       lukeRequest.setFields(Lists.newArrayList(field));
       lukeRequest.setMethod(SolrRequest.METHOD.GET);
 
+
       final LukeResponse response = lukeRequest.process(server);
       int i = 0;
       for (Map.Entry<String, Integer> histogramEntry : response.getFieldInfo().get(field).getTopTerms()) {
@@ -80,9 +88,10 @@ public class SolrFieldMatrix extends AbstractMatrix {
 
       }
       columns = i;
+      setColumnLabelBindings(columnLabelBindings);
     }
     this.columns = columns;
-    System.out.println(columnLabelBindings.keySet());
+//    System.out.println(columnLabelBindings.keySet());
   }
 
   @Override
@@ -184,7 +193,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
     }
   }
 
-  List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws SolrServerException {
+  private List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setRows(1).
       setFields(idField, field).
@@ -203,33 +212,38 @@ public class SolrFieldMatrix extends AbstractMatrix {
 
   public Vector viewRow(int row) {
     Vector v = new SequentialAccessSparseVector(columnSize());
+    SolrDocument document = null;
+    try {
+      document = viewDocument(row);
+    } catch (SolrServerException e) {
+      return null;
+    }
+
     if (type == TYPE.NUMERICAL) {
-      SolrDocument document = null;
-      try {
-        document = viewDocument(row);
-      } catch (SolrServerException e) {
-        return null;
-      }
       if (document != null) {
-        v.setQuick(0, Double.parseDouble((String) document.getFieldValue(field)));
+        v.setQuick(0, ((Number) document.getFieldValue(field)).doubleValue());
       }
       return v;
     } else if (type == TYPE.BOOLEAN) {
-      return null;
+      if(document!=null) {
+        v.setQuick(0, (Boolean) document.getFieldValue(field) ? 1 : 0);
+        return v;
+      }
     } else if (type == TYPE.MULTINOMIAL) {
-      SolrDocument document = null;
-      try {
-        document = viewDocument(row);
-      } catch (SolrServerException e) {
-        return null;
-      }
       if (document != null) {
-        v.setQuick(columnLabelBindings.get(document.getFieldValue(field).toString()), 1);
+        String fieldValue = document.getFieldValue(field).toString();
+        if(multivalued){
+          String[] words = fieldValue.substring(1, fieldValue.lastIndexOf(']')).split(",\\s*");
+          for(String word:words) {
+            v.setQuick(columnLabelBindings.get(word), 1);
+          }
+        } else{
+          v.setQuick(columnLabelBindings.get(fieldValue), 1);
+        }
+        return v;
       }
-      return v;
     } else if (type == TYPE.TEXT) {
-
-      List<TermVectorResponse.TermVectorInfo> terms = null;
+      List<TermVectorResponse.TermVectorInfo> terms;
       try {
         terms = viewTerms(row);
       } catch (SolrServerException e) {
@@ -243,6 +257,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
     } else {
       return null;
     }
+    return null;
   }
 
   @Override
