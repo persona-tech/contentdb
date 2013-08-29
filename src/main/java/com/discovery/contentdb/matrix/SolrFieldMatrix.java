@@ -184,7 +184,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
     }
   }
 
-  private List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws SolrServerException {
+  List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setRows(1).
       setFields(idField, field).
@@ -297,10 +297,5 @@ public class SolrFieldMatrix extends AbstractMatrix {
   }
 
   public static void main(String[] args) throws Exception {
-    //example usage
-    SolrFieldMatrix matrix = new SolrFieldMatrix(new HttpSolrServer("http://localhost:8983/solr"), "id", "title", TYPE.TEXT);
-    //matrix.getCandidates("myKeyword", 5);
-    matrix.viewTerms(5);
-    //matrix.viewRow(2);
   }
 }
