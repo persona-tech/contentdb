@@ -1,5 +1,6 @@
 package com.discovery.contentdb.matrix;
 
+import com.discovery.contentdb.matrix.exception.ContentException;
 import com.discovery.contentdb.matrix.solrj.tv.TermVectorResponse;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -26,7 +27,7 @@ import java.util.Map;
  * {@author} gcapan Casts a Solr Field to a read-only matrix, where one document represents a row, and indexed by the
  * idField.
  */
-public class SolrFieldMatrix extends AbstractMatrix {
+public class SolrFieldMatrix extends AbstractMatrix implements ContentDB{
   private String idField;
   private String field;
   private String spatialField = null;
@@ -95,7 +96,8 @@ public class SolrFieldMatrix extends AbstractMatrix {
     return this.columns;
   }
 
-  public FastIDSet getCandidates(String keyword, int maxLength) throws SolrServerException {
+  @Override
+  public FastIDSet getCandidates(String keyword, int maxLength)  throws ContentException{
     SolrQuery query = new SolrQuery();
     query.setFacet(false).
        setHighlight(false);
@@ -112,11 +114,8 @@ public class SolrFieldMatrix extends AbstractMatrix {
     return getCandidates(query, maxLength);
   }
 
-  public void setSpatialField(String spatialField) {
-    this.spatialField = spatialField;
-  }
-
-  public FastIDSet getCandidates(String keyword, double latitude, double longitude, int rangeInKm) throws SolrServerException {
+  @Override
+  public FastIDSet getCandidates(String keyword, double latitude, double longitude, int rangeInKm) throws ContentException {
     Preconditions.checkNotNull(spatialField, "You should determine the spatial field in your Solr index");
     SolrQuery query = new SolrQuery();
     query.setQuery(field + ":" + keyword);
@@ -124,13 +123,22 @@ public class SolrFieldMatrix extends AbstractMatrix {
     query.setParam("sfield", spatialField);
     query.setParam("pt", latitude + "," + longitude);
     query.setParam("d", Integer.toString(rangeInKm));
-    return getCandidates(query);
+    try {
+      return getCandidates(query);
+    } catch (SolrServerException se) {
+      throw new ContentException(se);
+    }
   }
 
-  public FastIDSet getCandidates(SolrQuery query, int maxLength) throws SolrServerException {
+  @Override
+  public FastIDSet getCandidates(SolrQuery query, int maxLength) throws ContentException {
     query.setRows(maxLength).
        setStart(0);
-    return getCandidates(query);
+    try {
+      return getCandidates(query);
+    } catch (SolrServerException se) {
+      throw  new ContentException(se);
+    }
   }
 
   private FastIDSet getCandidates(SolrQuery query) throws SolrServerException {
@@ -144,7 +152,8 @@ public class SolrFieldMatrix extends AbstractMatrix {
     return idSet;
   }
 
-  public FastIDSet mostSimilars(int docId, int maxLength) throws SolrServerException {
+  @Override
+  public FastIDSet mostSimilars(int docId, int maxLength) throws ContentException {
     SolrQuery query = new SolrQuery();
     query.setRequestHandler("/mlt").
        setQuery(idField + ":" + docId).
@@ -152,7 +161,11 @@ public class SolrFieldMatrix extends AbstractMatrix {
        setStart(0).
        setRows(maxLength);
 
-    return getCandidates(query);
+    try {
+      return getCandidates(query);
+    } catch (SolrServerException e) {
+      throw new ContentException(e);
+    }
   }
 
 
@@ -266,7 +279,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
         v.setQuick((int) id, get((int) id, column));
       }
       return v;
-    } catch (SolrServerException se) {
+    } catch (ContentException ce) {
       return null;
     }
   }
