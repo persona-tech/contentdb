@@ -2,6 +2,7 @@ package com.discovery.contentdb.matrix;
 
 import com.discovery.contentdb.matrix.exception.ContentException;
 import org.apache.commons.io.FileUtils;
+import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrInputDocument;
@@ -152,6 +153,32 @@ public class SolrFieldMatrixTest {
   public void testMostSimilars() throws  Exception {
     SolrFieldMatrix matrix = new SolrFieldMatrix(solrServer, "id", "textField", TYPE.TEXT, false);
     assertTrue(matrix.mostSimilars(3,1).contains(4));
+  }
+
+  @Test
+  public void testGetCandidates() throws Exception {
+    SolrFieldMatrix matrix1 = new SolrFieldMatrix(solrServer, "id", "textField", TYPE.TEXT, false);
+    FastIDSet candidates = matrix1.getCandidates("one", 3);
+    assertTrue(candidates.size() == 1);
+    assertTrue(candidates.contains(1));
+
+  }
+
+  @Test
+  public void testSolrMatrix() throws Exception {
+    SolrFieldMatrix matrix1 = new SolrFieldMatrix(solrServer, "id", "textField", TYPE.TEXT, false);
+    SolrFieldMatrix matrix2 = new SolrFieldMatrix(solrServer, "id", "boolField", TYPE.BOOLEAN, false);
+    SolrFieldMatrix matrix3 = new SolrFieldMatrix(solrServer, "id", "intField", TYPE.NUMERICAL, false);
+
+    SolrMatrix matrix = new SolrMatrix(new SolrFieldMatrix[]{matrix2, matrix1, matrix3});
+
+    assertEquals(1, matrix.get(1, matrix.getColumnLabelBindings().get("one")), 0.00);
+    assertEquals(0, matrix.get(1, matrix.getColumnLabelBindings().get("two")), 0.00);
+    FastIDSet candidates = matrix.getCandidates("textField", "one", 3);
+
+    assertTrue(candidates.size()==1);
+    assertTrue(candidates.contains(1));
+
   }
 
   @Test

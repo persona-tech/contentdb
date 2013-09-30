@@ -1,19 +1,22 @@
 package com.discovery.contentdb.matrix;
 
+import com.google.common.collect.Maps;
 import org.apache.mahout.math.AbstractMatrix;
 import org.apache.mahout.math.CardinalityException;
 import org.apache.mahout.math.Matrix;
 import org.apache.mahout.math.Vector;
 
+import java.util.Map;
+
 /**
  * Adjoins multiple matrices, rows can be reached as if it is a single matrix
  */
-public class ConcatenatedMatrix extends AbstractMatrix {
+public class SuperMatrix extends AbstractMatrix {
 
   private Matrix[] matrices;
   private int[] columnSizes;
 
-  public ConcatenatedMatrix(Matrix[] matrices) {
+  public SuperMatrix(Matrix[] matrices) {
     super(matrices[0].rowSize(), columnSize(matrices));
     this.matrices = matrices;
 
@@ -27,6 +30,25 @@ public class ConcatenatedMatrix extends AbstractMatrix {
     for (int i = 0; i < matrices.length; i++) {
       columnSizes[i] = matrices[i].columnSize();
     }
+
+    this.columnLabelBindings = Maps.newHashMap();
+    int[] offsets = new int[matrices.length];
+    offsets[0] = 0;
+    for(int i = 1; i<offsets.length; i++) {
+      offsets[i] = offsets[i-1]+matrices[i-1].columnSize();
+    }
+
+
+    for(int i = 0; i<matrices.length; i++) {
+      Map<String, Integer> subColumnLabelBindings = matrices[i].getColumnLabelBindings();
+      if(subColumnLabelBindings!=null){
+        for(Map.Entry<String, Integer> columnAndLabel:subColumnLabelBindings.entrySet()){
+          this.columnLabelBindings.put(columnAndLabel.getKey(), columnAndLabel.getValue()+offsets[i]);
+        }
+      }
+    }
+
+
   }
 
   @Override
@@ -69,7 +91,7 @@ public class ConcatenatedMatrix extends AbstractMatrix {
     for (int i = 0; i < matrices.length; i++) {
       matrices[i] = this.matrices[i].like(rowSize(), columnSizes[i]);
     }
-    return new ConcatenatedMatrix(matrices);
+    return new SuperMatrix(matrices);
   }
 
   @Override
@@ -103,6 +125,7 @@ public class ConcatenatedMatrix extends AbstractMatrix {
     }
     return new int[]{i, column};
   }
+
 
   private static int columnSize(Matrix[] matrices) {
     int columnSize = 0;

@@ -27,7 +27,7 @@ import java.util.Map;
  * {@author} gcapan Casts a Solr Field to a read-only matrix, where one document represents a row, and indexed by the
  * idField.
  */
-public class SolrFieldMatrix extends AbstractMatrix implements ContentDB{
+public class SolrFieldMatrix extends AbstractMatrix {
   private String idField;
   private String field;
   private String spatialField = null;
@@ -91,12 +91,14 @@ public class SolrFieldMatrix extends AbstractMatrix implements ContentDB{
     this.columns = columns;
   }
 
+  public String getFieldName(){
+    return field;
+  }
   @Override
   public int columnSize() {
     return this.columns;
   }
 
-  @Override
   public FastIDSet getCandidates(String keyword, int maxLength)  throws ContentException{
     SolrQuery query = new SolrQuery();
     query.setFacet(false).
@@ -114,7 +116,6 @@ public class SolrFieldMatrix extends AbstractMatrix implements ContentDB{
     return getCandidates(query, maxLength);
   }
 
-  @Override
   public FastIDSet getCandidates(String keyword, double latitude, double longitude, int rangeInKm) throws ContentException {
     Preconditions.checkNotNull(spatialField, "You should determine the spatial field in your Solr index");
     SolrQuery query = new SolrQuery();
@@ -130,7 +131,6 @@ public class SolrFieldMatrix extends AbstractMatrix implements ContentDB{
     }
   }
 
-  @Override
   public FastIDSet getCandidates(SolrQuery query, int maxLength) throws ContentException {
     query.setRows(maxLength).
        setStart(0);
@@ -152,7 +152,6 @@ public class SolrFieldMatrix extends AbstractMatrix implements ContentDB{
     return idSet;
   }
 
-  @Override
   public FastIDSet mostSimilars(int docId, int maxLength) throws ContentException {
     SolrQuery query = new SolrQuery();
     query.setRequestHandler("/mlt").
