@@ -64,6 +64,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
     this.type = type;
     this.server = server;
     this.spatialField = spatialField;
+    this.multivalued = multivalued;
     initialize();
   }
 
@@ -91,7 +92,6 @@ public class SolrFieldMatrix extends AbstractMatrix {
       setColumnLabelBindings(columnLabelBindings);
     }
     this.columns = columns;
-//    System.out.println(columnLabelBindings.keySet());
   }
 
   @Override
