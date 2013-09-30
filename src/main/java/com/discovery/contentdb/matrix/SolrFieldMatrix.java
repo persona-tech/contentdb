@@ -70,6 +70,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
     columnLabelBindings = Maps.newHashMap();
     if (type.equals(TYPE.BOOLEAN) || type.equals(TYPE.NUMERICAL)) {
       columnLabelBindings.put(field, 0);
+      setColumnLabelBindings(columnLabelBindings);
       columns = 1;
     } else if (type.equals(TYPE.TEXT) || type.equals(TYPE.MULTINOMIAL)) {
       LukeRequest lukeRequest = new LukeRequest();

@@ -174,6 +174,8 @@ public class SolrFieldMatrixTest {
 
     assertEquals(1, matrix.get(1, matrix.getColumnLabelBindings().get("one")), 0.00);
     assertEquals(0, matrix.get(1, matrix.getColumnLabelBindings().get("two")), 0.00);
+    assertEquals(1, matrix.get(1, matrix.getColumnLabelBindings().get("boolField")), 0.00);
+    assertEquals(0, matrix.get(2, matrix.getColumnLabelBindings().get("boolField")), 0.00);
     FastIDSet candidates = matrix.getCandidates("textField", "one", 3);
 
     assertTrue(candidates.size()==1);
