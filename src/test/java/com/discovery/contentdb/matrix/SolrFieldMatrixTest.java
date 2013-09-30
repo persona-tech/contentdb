@@ -41,6 +41,7 @@ public class SolrFieldMatrixTest {
     doc1.addField("naryStringField", "cat1");
     doc1.addField("multiNaryStringField", "cat1");
     doc1.addField("multiNaryStringField", "cat2");
+    doc1.addField("loc", "38.424546,27.13034"); // Izmir
 
     SolrInputDocument doc2 = new SolrInputDocument();
     doc2.addField("id", "2");
@@ -50,6 +51,7 @@ public class SolrFieldMatrixTest {
     doc2.addField("naryStringField", "cat2");
     doc2.addField("multiNaryStringField", "cat2");
     doc2.addField("multiNaryStringField", "cat3");
+    doc2.addField("loc", "39.937119,32.852447"); // Ankara
 
 
     SolrInputDocument doc3 = new SolrInputDocument();
@@ -60,6 +62,7 @@ public class SolrFieldMatrixTest {
     doc3.addField("naryStringField", "cat3");
     doc3.addField("multiNaryStringField", "cat3");
     doc3.addField("multiNaryStringField", "cat1");
+    doc3.addField("loc", "41.018765,28.977706"); // Istanbul
 
     SolrInputDocument doc4 = new SolrInputDocument();
     doc4.addField("id", "4");
@@ -70,9 +73,6 @@ public class SolrFieldMatrixTest {
     doc4.addField("multiNaryStringField", "cat3");
     doc4.addField("multiNaryStringField", "cat1");
 
-
-
-
     Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
     docs.add(doc1);
     docs.add(doc2);
@@ -80,6 +80,12 @@ public class SolrFieldMatrixTest {
 
     solrServer.add(docs);
     solrServer.commit();
+  }
+
+  @Test
+  public void testSpatialSearct() throws IOException, SolrServerException {
+    SolrFieldMatrix matrix = new SolrFieldMatrix(solrServer, "id", "textField", false, "loc", TYPE.TEXT);
+    assertEquals(1, matrix.getCandidates("Sentence", 36.887584, 30.692657, 9000).iterator().peek());
   }
 
   @Test

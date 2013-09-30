@@ -11,23 +11,30 @@
    <field name="textField" type="text_tr" indexed="true" stored="true" termVectors="true"
           termPositions="true" termOffsets="true" />
    <field name="_version_" type="long" indexed="true" stored="true"/>
- </fields>
 
+   <!-- Fields for spatial search -->
+   <field name="loc" type="location" indexed="true" stored="true"/>
+   <dynamicField name="*_coordinate"  type="tdouble" indexed="true"  stored="false" />
+
+  </fields>
 
  <uniqueKey>id</uniqueKey>
-
-  <types>
-
+ 
+ <types>
+    
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" positionIncrementGap="0"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
-
+    
     <fieldType name="text_tr" class="solr.TextField" positionIncrementGap="100">
       <analyzer> 
         <tokenizer class="solr.StandardTokenizerFactory"/>
       </analyzer>
     </fieldType>
 
+    <!-- Field types for spatial search -->
+    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" positionIncrementGap="0"/>
  </types>
 </schema>

@@ -5,16 +5,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
-import org.apache.mahout.math.AbstractMatrix;
-import org.apache.mahout.math.Matrix;
-import org.apache.mahout.math.SequentialAccessSparseVector;
-import org.apache.mahout.math.SparseMatrix;
-import org.apache.mahout.math.Vector;
+import org.apache.mahout.math.*;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -45,7 +40,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
                          boolean multivalued) throws IOException, SolrServerException {
     super(Integer.MAX_VALUE, 0);
     this.multivalued = multivalued;
-    if(this.multivalued){
+    if (this.multivalued) {
       Preconditions.checkArgument(type.equals(TYPE.MULTINOMIAL), "Multivalued is not supported unless this is a " +
          "multinomial field");
     }
@@ -55,9 +50,10 @@ public class SolrFieldMatrix extends AbstractMatrix {
     this.server = server;
     initialize();
   }
+
   public SolrFieldMatrix(SolrServer server, String idField, String field, boolean multivalued, String spatialField,
                          TYPE type) throws IOException,
-    SolrServerException {
+     SolrServerException {
     super(Integer.MAX_VALUE, 0);
     this.idField = idField;
     this.field = field;
@@ -102,7 +98,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
   public FastIDSet getCandidates(String keyword, int maxLength) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setFacet(false).
-      setHighlight(false);
+       setHighlight(false);
 
     if (!(type == TYPE.TEXT)) {
       if (type == TYPE.BOOLEAN) {
@@ -120,29 +116,29 @@ public class SolrFieldMatrix extends AbstractMatrix {
     this.spatialField = spatialField;
   }
 
-  public FastIDSet getCandidates(String keyword, double longitude, double latitude, int rangeInKm) throws SolrServerException{
+  public FastIDSet getCandidates(String keyword, double latitude, double longitude, int rangeInKm) throws SolrServerException {
     Preconditions.checkNotNull(spatialField, "You should determine the spatial field in your Solr index");
     SolrQuery query = new SolrQuery();
-    query.setQuery(field+":"+keyword);
+    query.setQuery(field + ":" + keyword);
     query.setParam("fq", "{!bbox}");
     query.setParam("sfield", spatialField);
-    query.setParam("pt", longitude+","+latitude);
-    query.setFields("d", Integer.toString(rangeInKm));
+    query.setParam("pt", latitude + "," + longitude);
+    query.setParam("d", Integer.toString(rangeInKm));
     return getCandidates(query);
   }
 
   public FastIDSet getCandidates(SolrQuery query, int maxLength) throws SolrServerException {
     query.setRows(maxLength).
-      setStart(0);
+       setStart(0);
     return getCandidates(query);
   }
 
   private FastIDSet getCandidates(SolrQuery query) throws SolrServerException {
-    FastIDSet idSet = new FastIDSet(query.getRows());
+    FastIDSet idSet = new FastIDSet();
     query.setFields(idField);
     SolrDocumentList docs = server.query(query).getResults();
     for (SolrDocument document : docs) {
-      String id = (String) document.getFieldValue(idField);
+      String id = String.valueOf(document.getFieldValue(idField));
       idSet.add(Long.parseLong(id));
     }
     return idSet;
@@ -151,8 +147,8 @@ public class SolrFieldMatrix extends AbstractMatrix {
   public FastIDSet mostSimilars(int docId, int maxLength) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setRequestHandler("/mlt").
-       setQuery(idField+":"+docId).
-       setParam("mlt.fl",field).
+       setQuery(idField + ":" + docId).
+       setParam("mlt.fl", field).
        setStart(0).
        setRows(maxLength);
 
@@ -163,8 +159,8 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private SolrDocumentList getDocuments(String keyword, int maxLength) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setFacet(false).
-      setHighlight(false).
-      setRows(maxLength);
+       setHighlight(false).
+       setRows(maxLength);
 
     if (!(type == TYPE.TEXT)) {
       if (type == TYPE.BOOLEAN) {
@@ -181,10 +177,10 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private SolrDocument viewDocument(int docId) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setFacet(false).
-      setHighlight(false).
-      setRows(1).
-      setFields(idField, field).
-      setQuery(idField + ":" + docId);
+       setHighlight(false).
+       setRows(1).
+       setFields(idField, field).
+       setQuery(idField + ":" + docId);
     SolrDocumentList results = server.query(query).getResults();
     if (results.size() == 0) {
       return null;
@@ -196,15 +192,15 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private List<TermVectorResponse.TermVectorInfo> viewTerms(int docId) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setRows(1).
-      setFields(idField, field).
-      setParam(CommonParams.DF, this.field).
-      setParam(TermVectorParams.TF_IDF, true).
-      setParam(TermVectorParams.DF, true).
-      setParam(TermVectorParams.TF, true).
-      setParam(TermVectorParams.FIELDS, field).
-      setIncludeScore(false).
-      setRequestHandler("/tvrh").
-      setQuery(idField + ":" + docId);
+       setFields(idField, field).
+       setParam(CommonParams.DF, this.field).
+       setParam(TermVectorParams.TF_IDF, true).
+       setParam(TermVectorParams.DF, true).
+       setParam(TermVectorParams.TF, true).
+       setParam(TermVectorParams.FIELDS, field).
+       setIncludeScore(false).
+       setRequestHandler("/tvrh").
+       setQuery(idField + ":" + docId);
     QueryResponse queryResponse = server.query(query);
     TermVectorResponse termVectorResponse = new TermVectorResponse(query, queryResponse, Integer.toString(docId));
     return termVectorResponse.getTermVectorInfoList();
@@ -225,19 +221,19 @@ public class SolrFieldMatrix extends AbstractMatrix {
       }
       return v;
     } else if (type == TYPE.BOOLEAN) {
-      if(document!=null) {
+      if (document != null) {
         v.setQuick(0, (Boolean) document.getFieldValue(field) ? 1 : 0);
         return v;
       }
     } else if (type == TYPE.MULTINOMIAL) {
       if (document != null) {
         String fieldValue = document.getFieldValue(field).toString();
-        if(multivalued){
+        if (multivalued) {
           String[] words = fieldValue.substring(1, fieldValue.lastIndexOf(']')).split(",\\s*");
-          for(String word:words) {
+          for (String word : words) {
             v.setQuick(columnLabelBindings.get(word), 1);
           }
-        } else{
+        } else {
           v.setQuick(columnLabelBindings.get(fieldValue), 1);
         }
         return v;
