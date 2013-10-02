@@ -16,6 +16,7 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.TermVectorParams;
 
@@ -292,6 +293,18 @@ public class SolrFieldMatrix extends AbstractMatrix {
   @Override
   public Matrix assignRow(int row, Vector other) {
     throw new UnsupportedOperationException();
+  }
+
+  public Matrix assignRow(int row, SolrInputDocument document) throws ContentException{
+    document.setField(idField, row);
+    try {
+      server.add(document);
+    } catch (SolrServerException e) {
+      throw new ContentException(e);
+    } catch (IOException e) {
+      throw new ContentException(e);
+    }
+    return this;
   }
 
   @Override

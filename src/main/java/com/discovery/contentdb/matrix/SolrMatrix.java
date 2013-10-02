@@ -4,6 +4,7 @@ import com.discovery.contentdb.matrix.exception.ContentException;
 import com.google.common.collect.Maps;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.SolrInputDocument;
 
 import java.util.Map;
 
@@ -23,6 +24,9 @@ public class SolrMatrix extends SuperMatrix implements Content{
     }
   }
 
+  private void assignRow(int id, SolrInputDocument document) throws ContentException{
+    matrices[0].assignRow(id, document);
+  }
 
   @Override
   public FastIDSet getCandidates(String identifier, String keyword, int maxLength) throws ContentException {
@@ -43,5 +47,10 @@ public class SolrMatrix extends SuperMatrix implements Content{
   @Override
   public FastIDSet mostSimilars(String identifier, int id, int maxLength) throws ContentException {
     return matrices[fieldMappings.get(identifier)].mostSimilars(id, maxLength);
+  }
+
+  @Override
+  public void setContent(int id, SolrInputDocument document) throws ContentException {
+    assignRow(id, document);
   }
 }

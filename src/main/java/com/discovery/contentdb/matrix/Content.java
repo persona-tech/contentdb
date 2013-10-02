@@ -4,6 +4,7 @@ import com.discovery.contentdb.matrix.exception.ContentException;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.mahout.math.Matrix;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.common.SolrInputDocument;
 
 /**
  * {@author} gcapan
@@ -49,6 +50,14 @@ public interface Content extends Matrix {
    * @return set of most similar entities
    */
   FastIDSet mostSimilars (String identifier, int id, int maxLength) throws ContentException;
+
+  /**
+   * Used to add a new entity
+   * @param id id of the entity
+   * @param document the content vector encoded as {@link SolrInputDocument}
+   * @throws ContentException
+   */
+  void setContent(int id, SolrInputDocument document) throws ContentException;
 
 
 }
