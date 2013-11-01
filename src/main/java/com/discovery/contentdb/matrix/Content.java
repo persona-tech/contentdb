@@ -23,6 +23,9 @@ public interface Content extends Matrix {
    */
   FastIDSet getCandidates (String identifier, String keyword, int maxLength) throws ContentException;
 
+  FastIDSet getCandidates (String identifier, String keyword, int start, int maxLength) throws ContentException;
+
+
   /**
    * like {@link Content#getCandidates(String, String, int)}, with an extension of spatial filtering
    * Used for pre-filtering entities within a proximity, based on a keyword
@@ -42,6 +45,8 @@ public interface Content extends Matrix {
    * @return set of candidate entities
    */
   FastIDSet getCandidates (String identifier, SolrQuery query, int maxLength) throws ContentException;
+
+  FastIDSet getCandidates (String identifier, SolrQuery query, int start, int maxLength) throws ContentException;
 
   /**
    * Used to find most similar entities in content.

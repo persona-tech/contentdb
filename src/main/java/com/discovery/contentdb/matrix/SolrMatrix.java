@@ -34,6 +34,11 @@ public class SolrMatrix extends SuperMatrix implements Content{
   }
 
   @Override
+  public FastIDSet getCandidates(String identifier, String keyword, int start, int maxLength) throws ContentException {
+    return matrices[fieldMappings.get(identifier)].getCandidates(keyword, start, maxLength);
+  }
+
+  @Override
   public FastIDSet getCandidates(String identifier, String keyword, double latitude, double longitude, int rangeInKm)
      throws ContentException {
     return matrices[fieldMappings.get(identifier)].getCandidates(keyword, latitude, longitude, rangeInKm);
@@ -42,6 +47,11 @@ public class SolrMatrix extends SuperMatrix implements Content{
   @Override
   public FastIDSet getCandidates(String identifier, SolrQuery query, int maxLength) throws ContentException {
     return matrices[fieldMappings.get(identifier)].getCandidates(query, maxLength);
+  }
+
+  @Override
+  public FastIDSet getCandidates(String identifier, SolrQuery query, int start, int maxLength) throws ContentException {
+    return matrices[fieldMappings.get(identifier)].getCandidates(query, start, maxLength);
   }
 
   @Override

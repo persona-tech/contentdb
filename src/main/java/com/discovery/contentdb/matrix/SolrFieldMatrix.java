@@ -101,7 +101,7 @@ public class SolrFieldMatrix extends AbstractMatrix {
     return this.columns;
   }
 
-  public FastIDSet getCandidates(String keyword, int maxLength)  throws ContentException{
+  public FastIDSet getCandidates(String keyword, int start, int maxLength)  throws ContentException{
     SolrQuery query = new SolrQuery();
     query.setFacet(false).
        setHighlight(false);
@@ -115,7 +115,11 @@ public class SolrFieldMatrix extends AbstractMatrix {
       query.setQuery(keyword);
       query.setParam(CommonParams.DF, this.field);
     }
-    return getCandidates(query, maxLength);
+    return getCandidates(query, start, maxLength);
+  }
+
+  public FastIDSet getCandidates (String keyword, int maxLength) throws ContentException {
+    return getCandidates(keyword, 0, maxLength);
   }
 
   public FastIDSet getCandidates(String keyword, double latitude, double longitude, int rangeInKm) throws ContentException {
@@ -133,14 +137,18 @@ public class SolrFieldMatrix extends AbstractMatrix {
     }
   }
 
-  public FastIDSet getCandidates(SolrQuery query, int maxLength) throws ContentException {
+  public FastIDSet getCandidates(SolrQuery query, int start, int maxLength) throws ContentException {
     query.setRows(maxLength).
-       setStart(0);
+       setStart(start);
     try {
       return getCandidates(query);
     } catch (SolrServerException se) {
       throw  new ContentException(se);
     }
+  }
+
+  public FastIDSet getCandidates(SolrQuery query, int maxLength) throws ContentException {
+    return getCandidates(query, 0, maxLength);
   }
 
   private FastIDSet getCandidates(SolrQuery query) throws SolrServerException {
@@ -170,10 +178,11 @@ public class SolrFieldMatrix extends AbstractMatrix {
   }
 
 
-  private SolrDocumentList getDocuments(String keyword, int maxLength) throws SolrServerException {
+  private SolrDocumentList getDocuments(String keyword, int start, int maxLength) throws SolrServerException {
     SolrQuery query = new SolrQuery();
     query.setFacet(false).
        setHighlight(false).
+       setStart(start).
        setRows(maxLength);
 
     if (!(type == TYPE.TEXT)) {
