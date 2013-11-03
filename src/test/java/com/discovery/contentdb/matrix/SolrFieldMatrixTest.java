@@ -3,11 +3,11 @@ package com.discovery.contentdb.matrix;
 import com.discovery.contentdb.matrix.exception.ContentException;
 import org.apache.commons.io.FileUtils;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.CoreContainer;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -21,7 +21,7 @@ import static junit.framework.Assert.assertTrue;
 
 public class SolrFieldMatrixTest {
 
-  private SolrServer solrServer;
+  private EmbeddedSolrServer solrServer;
   private CoreContainer container;
 
   @Before
@@ -30,9 +30,8 @@ public class SolrFieldMatrixTest {
     container = new CoreContainer(solrHome);
     container.load(solrHome, new File(solrHome + "/solr.xml"));
 
-    //solrServer = new EmbeddedSolrServer(container, "fieldmatrix");
-    //populateServerWithData();
-    solrServer = new HttpSolrServer("http://localhost:8983/solr/movielens10m/");
+    solrServer = new EmbeddedSolrServer(container, "fieldmatrix");
+    populateServerWithData();
   }
 
   private void populateServerWithData() throws SolrServerException, IOException {
@@ -91,18 +90,12 @@ public class SolrFieldMatrixTest {
     assertEquals(1, matrix.getCandidates("Sentence", 36.887584, 30.692657, 9000).iterator().peek());
   }
 
-
   @Test
-  public void testViewDocument() throws Exception{
-    SolrFieldMatrix matrix = new SolrFieldMatrix(solrServer, "id", "name", TYPE.TEXT, false);
-    matrix.viewRow(3);
-
-    SolrFieldMatrix matrix2 = new SolrFieldMatrix(solrServer, "id", "tags", TYPE.MULTINOMIAL, true);
-    matrix2.viewRow(3);
-    SolrFieldMatrix matrix3 = new SolrFieldMatrix(solrServer, "id", "categories", TYPE.MULTINOMIAL, true);
-    matrix3.viewRow(3);
+  public void testViewRow() throws Exception{
+    SolrFieldMatrix matrix = new SolrFieldMatrix(solrServer, "id", "textField", TYPE.TEXT, false);
+    //System.out.println(matrix.viewRow(3));
   }
-//  @Test
+  @Test
   public void testColumnSize() throws Exception {
     SolrFieldMatrix matrix = new SolrFieldMatrix(solrServer, "id", "textField", TYPE.TEXT, false);
     assertEquals(4, matrix.columnSize());
@@ -117,7 +110,7 @@ public class SolrFieldMatrixTest {
   }
 
 
-//  @Test
+  @Test
   public void testGet() throws Exception {
     SolrFieldMatrix matrix = new SolrFieldMatrix(solrServer, "id", "boolField", TYPE.BOOLEAN, false);
     assertEquals(1.0, matrix.get(1, 0), 0.0);
@@ -167,7 +160,7 @@ public class SolrFieldMatrixTest {
     assertTrue(matrix.mostSimilars(3,1).contains(4));
   }
 
-//  @Test
+  @Test
   public void testGetCandidates() throws Exception {
     SolrFieldMatrix matrix1 = new SolrFieldMatrix(solrServer, "id", "textField", TYPE.TEXT, false);
     FastIDSet candidates = matrix1.getCandidates("one", 3);
@@ -176,13 +169,13 @@ public class SolrFieldMatrixTest {
 
   }
 
-//  @Test
+  @Test
   public void testSolrMatrix() throws Exception {
     SolrFieldMatrix matrix1 = new SolrFieldMatrix(solrServer, "id", "textField", TYPE.TEXT, false);
     SolrFieldMatrix matrix2 = new SolrFieldMatrix(solrServer, "id", "boolField", TYPE.BOOLEAN, false);
     SolrFieldMatrix matrix3 = new SolrFieldMatrix(solrServer, "id", "intField", TYPE.NUMERICAL, false);
 
-    SolrMatrix matrix = new SolrMatrix(new SolrFieldMatrix[]{matrix2, matrix1, matrix3});
+    SolrMatrix matrix = new SolrMatrix(new SolrFieldMatrix[]{matrix1, matrix2, matrix3});
 
     assertEquals(1, matrix.get(1, matrix.getColumnLabelBindings().get("one")), 0.00);
     assertEquals(0, matrix.get(1, matrix.getColumnLabelBindings().get("two")), 0.00);
@@ -200,7 +193,7 @@ public class SolrFieldMatrixTest {
     assertEquals(1,1);
   }
 
-  //@After
+  @After
   public void cleanup()throws IOException, SolrServerException{
     solrServer.deleteByQuery("*:*");
     solrServer.commit();

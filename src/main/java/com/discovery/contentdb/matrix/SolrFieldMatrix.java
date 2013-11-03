@@ -5,6 +5,7 @@ import com.discovery.contentdb.matrix.solrj.tv.TermVectorResponse;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.mahout.math.*;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -21,6 +22,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.TermVectorParams;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +39,8 @@ public class SolrFieldMatrix extends AbstractMatrix {
   private SolrServer server;
   private int rows;
   private Map<String, Integer> columnLabelBindings;
+  private final HashSet<Integer> cached = Sets.newHashSet();
+  private Matrix cache;
 
   public SolrFieldMatrix(SolrServer server, String idField, String field, TYPE type,
                          boolean multivalued) throws IOException, SolrServerException {
@@ -73,6 +77,8 @@ public class SolrFieldMatrix extends AbstractMatrix {
       columnLabelBindings.put(field, 0);
       setColumnLabelBindings(columnLabelBindings);
       columns = 1;
+      cache = new SparseMatrix(Integer.MAX_VALUE, 1);
+      cache.setColumnLabelBindings(columnLabelBindings);
     } else if (type.equals(TYPE.TEXT) || type.equals(TYPE.MULTINOMIAL)) {
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(1000);
@@ -89,6 +95,8 @@ public class SolrFieldMatrix extends AbstractMatrix {
       }
       columns = i;
       setColumnLabelBindings(columnLabelBindings);
+      cache = new SparseMatrix(Integer.MAX_VALUE, columns);
+      cache.setColumnLabelBindings(columnLabelBindings);
     }
     this.columns = columns;
   }
@@ -230,6 +238,10 @@ public class SolrFieldMatrix extends AbstractMatrix {
   }
 
   public Vector viewRow(int row) {
+    if(cached.contains(row)){
+      return cache.viewRow(row);
+    }
+    cached.add(row);
     Vector v = new SequentialAccessSparseVector(columnSize());
     SolrDocument document = null;
     try {
@@ -242,27 +254,28 @@ public class SolrFieldMatrix extends AbstractMatrix {
       if (document != null) {
         v.setQuick(0, ((Number) document.getFieldValue(field)).doubleValue());
       }
-      return v;
+//      return v;
     } else if (type == TYPE.BOOLEAN) {
       if (document != null) {
         v.setQuick(0, (Boolean) document.getFieldValue(field) ? 1 : 0);
-        return v;
+//        return v;
       }
     } else if (type == TYPE.MULTINOMIAL) {
       if (document != null) {
-        String fieldValue = document.getFieldValue(field).toString();
-        System.out.println(fieldValue);
-        if (multivalued) {
-          String[] words = fieldValue.substring(1, fieldValue.lastIndexOf(']')).split(",\\s*");
-          for (String word : words) {
-            if(columnLabelBindings.containsKey(word)){
-              v.setQuick(columnLabelBindings.get(word), 1);
+        if(document.getFieldValue(field)!=null){
+          String fieldValue = document.getFieldValue(field).toString();
+          if (multivalued) {
+            String[] words = fieldValue.substring(1, fieldValue.lastIndexOf(']')).split(",\\s*");
+            for (String word : words) {
+              if(columnLabelBindings.containsKey(word)){
+                v.setQuick(columnLabelBindings.get(word), 1);
+              }
             }
+          } else {
+            v.setQuick(columnLabelBindings.get(fieldValue), 1);
           }
-        } else {
-          v.setQuick(columnLabelBindings.get(fieldValue), 1);
         }
-        return v;
+//        return v;
       }
     } else if (type == TYPE.TEXT) {
       List<TermVectorResponse.TermVectorInfo> terms;
@@ -277,11 +290,12 @@ public class SolrFieldMatrix extends AbstractMatrix {
           v.setQuick(columnLabelBindings.get(word), term.getTfIdf());
         }
       }
-      return v;
+//      return v;
     } else {
       return null;
     }
-    return null;
+    cache.assignRow(row, v);
+    return v;
   }
 
   @Override
