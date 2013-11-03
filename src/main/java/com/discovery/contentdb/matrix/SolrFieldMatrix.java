@@ -251,10 +251,13 @@ public class SolrFieldMatrix extends AbstractMatrix {
     } else if (type == TYPE.MULTINOMIAL) {
       if (document != null) {
         String fieldValue = document.getFieldValue(field).toString();
+        System.out.println(fieldValue);
         if (multivalued) {
           String[] words = fieldValue.substring(1, fieldValue.lastIndexOf(']')).split(",\\s*");
           for (String word : words) {
-            v.setQuick(columnLabelBindings.get(word), 1);
+            if(columnLabelBindings.containsKey(word)){
+              v.setQuick(columnLabelBindings.get(word), 1);
+            }
           }
         } else {
           v.setQuick(columnLabelBindings.get(fieldValue), 1);
@@ -270,7 +273,9 @@ public class SolrFieldMatrix extends AbstractMatrix {
       }
       for (TermVectorResponse.TermVectorInfo term : terms) {
         String word = term.getWord();
-        v.setQuick(columnLabelBindings.get(word), term.getTfIdf());
+        if(columnLabelBindings.containsKey(word)){
+          v.setQuick(columnLabelBindings.get(word), term.getTfIdf());
+        }
       }
       return v;
     } else {
