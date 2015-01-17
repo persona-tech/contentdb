@@ -1,4 +1,4 @@
-package com.discovery.contentdb.matrix;
+package com.personaissance.persona.contentdb.matrix;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Lists;

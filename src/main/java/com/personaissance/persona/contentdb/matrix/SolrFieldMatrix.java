@@ -1,7 +1,8 @@
-package com.discovery.contentdb.matrix;
+package com.personaissance.persona.contentdb.matrix;
 
-import com.discovery.contentdb.matrix.exception.ContentException;
-import com.discovery.contentdb.matrix.solrj.tv.TermVectorResponse;
+import com.personaissance.persona.contentdb.TYPE;
+import com.personaissance.persona.contentdb.exception.ContentException;
+import com.personaissance.persona.contentdb.solrj.tv.TermVectorResponse;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

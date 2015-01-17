@@ -1,4 +1,4 @@
-package com.discovery.contentdb.matrix.solrj.tv;
+package com.personaissance.persona.contentdb.solrj.tv;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.client.solrj.SolrQuery;

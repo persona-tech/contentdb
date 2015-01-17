@@ -1,4 +1,4 @@
-package com.discovery.contentdb.matrix;
+package com.personaissance.persona.contentdb.matrix;
 
 import com.google.common.collect.Maps;
 import org.apache.mahout.math.AbstractMatrix;

@@ -1,6 +1,7 @@
-package com.discovery.contentdb.matrix;
+package com.personaissance.persona.contentdb.matrix;
 
-import com.discovery.contentdb.matrix.exception.ContentException;
+import com.personaissance.persona.contentdb.Content;
+import com.personaissance.persona.contentdb.exception.ContentException;
 import com.google.common.collect.Maps;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -12,7 +13,7 @@ import java.util.Map;
  * {@author} gcapan
  * A collection of {@link SolrFieldMatrix}es.
  */
-public class SolrMatrix extends SuperMatrix implements Content{
+public class SolrMatrix extends SuperMatrix implements Content {
   private Map<String, Integer> fieldMappings = Maps.newHashMap();
   private SolrFieldMatrix[] matrices;
   public SolrMatrix(SolrFieldMatrix[] matrices) {

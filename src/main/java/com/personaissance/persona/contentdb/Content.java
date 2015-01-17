@@ -1,6 +1,6 @@
-package com.discovery.contentdb.matrix;
+package com.personaissance.persona.contentdb;
 
-import com.discovery.contentdb.matrix.exception.ContentException;
+import com.personaissance.persona.contentdb.exception.ContentException;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.mahout.math.Matrix;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -8,10 +8,11 @@ import org.apache.solr.common.SolrInputDocument;
 
 /**
  * {@author} gcapan
- * A com.discovery.contentdb.matrix.Content is a matrix, with additional querying, spatial filtering, and most similars functionality; which can
- * be used to store user demographics information, and item content information that would be beneficial an online
- * recommender system; or any other system that needs to treat a content database, a document index,
- * for example, as a matrix.
+ * A com.discovery.contentdb.matrix.Content is a matrix, with additional querying, spatial filtering,
+ * and most similars functionality;
+ * which can be used to store user demographics information, and item content information that would be beneficial to
+ * an online recommender system; or any other system that needs to treat a content database---a document index for
+ * example--- as a matrix.
  */
 public interface Content extends Matrix {
 

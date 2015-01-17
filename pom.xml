@@ -2,17 +2,19 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.discovery.contentdb</groupId>
-  <artifactId>contentdb</artifactId>
+  <groupId>com.personaissance.persona</groupId>
+  <artifactId>persona-contentdb</artifactId>
   <version>0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <name>contentdb</name>
+  <name>Solr-Backed Content Database</name>
   <url>http://maven.apache.org</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <mahout.version>0.9-SNAPSHOT</mahout.version>
+    <mahout.version>1.0-SNAPSHOT</mahout.version>
+    <!-- TODO: Solr-4.4.0 creates a problem with EmbeddedSolrServer. If/when it is fixed, then we can update the version here. -->
+    <solr.version>4.6.0</solr.version>
   </properties>
 
   <dependencies>
@@ -25,11 +27,16 @@
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
-      <version>4.3.0</version>
+      <version>${solr.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-logging</groupId>
+      <artifactId>commons-logging</artifactId>
+      <version>1.1.3</version>
     </dependency>
     <dependency>
       <groupId>org.apache.mahout</groupId>
-      <artifactId>mahout-core</artifactId>
+      <artifactId>mahout-mrlegacy</artifactId>
       <version>${mahout.version}</version>
     </dependency>
 
@@ -37,8 +44,7 @@
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-core</artifactId>
-      <!-- TODO: Solr-4.4.0 creates a problem with EmbeddedSolrServer. If/when it is fixed, then we can update the version here. -->
-      <version>4.3.0</version>
+      <version>${solr.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

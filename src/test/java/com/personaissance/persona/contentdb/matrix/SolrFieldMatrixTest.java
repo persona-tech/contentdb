@@ -1,6 +1,7 @@
-package com.discovery.contentdb.matrix;
+package com.personaissance.persona.contentdb.matrix;
 
-import com.discovery.contentdb.matrix.exception.ContentException;
+import com.personaissance.persona.contentdb.TYPE;
+import com.personaissance.persona.contentdb.exception.ContentException;
 import org.apache.commons.io.FileUtils;
 import org.apache.mahout.cf.taste.impl.common.FastIDSet;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -27,8 +28,8 @@ public class SolrFieldMatrixTest {
   @Before
   public void initializeServer() throws IOException, SolrServerException {
     String solrHome = "src/test/resources/solr-home";
-    container = new CoreContainer(solrHome);
-    container.load(solrHome, new File(solrHome + "/solr.xml"));
+//    container = new CoreContainer(solrHome);
+    container = CoreContainer.createAndLoad(solrHome, new File(solrHome + "/solr.xml"));
 
     solrServer = new EmbeddedSolrServer(container, "fieldmatrix");
     populateServerWithData();

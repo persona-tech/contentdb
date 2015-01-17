@@ -1,4 +1,4 @@
-package com.discovery.contentdb.matrix.exception;
+package com.personaissance.persona.contentdb.exception;
 
 /**
  * {@author} gcapan

@@ -1,4 +1,4 @@
-package com.discovery.contentdb.matrix;
+package com.personaissance.persona.contentdb;
 
 /**
  * {@author} gcapan
