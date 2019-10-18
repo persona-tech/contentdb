@@ -14,7 +14,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <mahout.version>1.0-SNAPSHOT</mahout.version>
     <!-- TODO: Solr-4.4.0 creates a problem with EmbeddedSolrServer. If/when it is fixed, then we can update the version here. -->
-    <solr.version>4.6.0</solr.version>
+    <solr.version>8.2.0</solr.version>
   </properties>
 
   <dependencies>
